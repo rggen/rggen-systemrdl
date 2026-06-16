@@ -64,22 +64,22 @@ Guidelines for mapping SystemRDL's `sw` / `hw` / `onread` / `onwrite` combinatio
 
 Features present in SystemRDL but missing from RgGen, with clear implementation value.
 
-| Feature                                                                | Issue                                             | Status |
-| ---------------------------------------------------------------------- | ------------------------------------------------- | ------ |
-| **Alias register type**                                                | [#287](https://github.com/rggen/rggen/issues/287) | Filed  |
-| **Interrupt support** (trigger extension + block-level aggregation)    | [#290](https://github.com/rggen/rggen/issues/290) | Filed  |
-| **External + child block reference**                                   | [#291](https://github.com/rggen/rggen/issues/291) | Filed  |
-| **Counter saturate/wrap boundary behavior** (spec-level specification) | [#292](https://github.com/rggen/rggen/issues/292) | Filed  |
+| Feature                                                                | Issue                                                | Status         |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- | -------------- |
+| **Alias register type**                                                | rggen/rggen#287                                      | Filed          |
+| **Interrupt support** (trigger extension + block-level aggregation)    | rggen/rggen#290                                      | Filed          |
+| **External + child block reference**                                   | rggen/rggen#291                                      | Filed          |
+| **Counter saturate/wrap boundary behavior** (spec-level specification) | rggen/rggen#292                                      | Filed          |
 | **User-Defined Properties (UDP)**                                      | See [udp_handling_policy.md](udp_handling_policy.md) | Policy defined |
 
 ### Mapping Coverage by Issue
 
 | SystemRDL Feature                       | Corresponding RgGen Extension                                                     |
 | --------------------------------------- | --------------------------------------------------------------------------------- |
-| `alias` keyword                         | #287 alias register type                                                          |
-| `intr` field property + sticky variants | #290 (existing `w1c` family + trigger + aggregation)                              |
-| Trigger mode (level/edge)               | #290 `trigger` option                                                             |
-| Interrupt aggregation (OR output)       | #290 block-level `interrupt` attribute                                            |
+| `alias` keyword                         | rggen/rggen#287 alias register type                                               |
+| `intr` field property + sticky variants | rggen/rggen#290 (existing `w1c` family + trigger + aggregation)                   |
+| Trigger mode (level/edge)               | rggen/rggen#290 `trigger` option                                                  |
+| Interrupt aggregation (OR output)       | rggen/rggen#290 block-level `interrupt` attribute                                 |
 | `external regfile { ... }`              | External + child block reference                                                  |
 | `mem` component                         | External + child block reference (mementries x memwidth normalized to byte_size)  |
 | `incrsaturate` / `decrsaturate`         | Counter saturate/wrap boundary behavior (this feature)                            |
