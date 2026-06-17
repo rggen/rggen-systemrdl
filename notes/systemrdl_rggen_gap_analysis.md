@@ -64,22 +64,22 @@ Guidelines for mapping SystemRDL's `sw` / `hw` / `onread` / `onwrite` combinatio
 
 Features present in SystemRDL but missing from RgGen, with clear implementation value.
 
-| Feature                                                                | Issue                                                | Status         |
-| ---------------------------------------------------------------------- | ---------------------------------------------------- | -------------- |
-| **Alias register type**                                                | rggen/rggen#287                                      | Filed          |
-| **Interrupt support** (trigger extension + block-level aggregation)    | rggen/rggen#290                                      | Filed          |
-| **External + child block reference**                                   | rggen/rggen#291                                      | Filed          |
-| **Counter saturate/wrap boundary behavior** (spec-level specification) | rggen/rggen#292                                      | Filed          |
+| Feature                                                                | Issue                                             | Status |
+| ---------------------------------------------------------------------- | ------------------------------------------------- | ------ |
+| **Alias register type**                                                | [#287](https://github.com/rggen/rggen/issues/287) | Filed  |
+| **Interrupt support** (trigger extension + block-level aggregation)    | [#290](https://github.com/rggen/rggen/issues/290) | Filed  |
+| **External + child block reference**                                   | [#291](https://github.com/rggen/rggen/issues/291) | Filed  |
+| **Counter saturate/wrap boundary behavior** (spec-level specification) | [#292](https://github.com/rggen/rggen/issues/292) | Filed  |
 | **User-Defined Properties (UDP)**                                      | See [udp_handling_policy.md](udp_handling_policy.md) | Policy defined |
 
 ### Mapping Coverage by Issue
 
 | SystemRDL Feature                       | Corresponding RgGen Extension                                                     |
 | --------------------------------------- | --------------------------------------------------------------------------------- |
-| `alias` keyword                         | rggen/rggen#287 alias register type                                               |
-| `intr` field property + sticky variants | rggen/rggen#290 (existing `w1c` family + trigger + aggregation)                   |
-| Trigger mode (level/edge)               | rggen/rggen#290 `trigger` option                                                  |
-| Interrupt aggregation (OR output)       | rggen/rggen#290 block-level `interrupt` attribute                                 |
+| `alias` keyword                         | #287 alias register type                                                          |
+| `intr` field property + sticky variants | #290 (existing `w1c` family + trigger + aggregation)                              |
+| Trigger mode (level/edge)               | #290 `trigger` option                                                             |
+| Interrupt aggregation (OR output)       | #290 block-level `interrupt` attribute                                            |
 | `external regfile { ... }`              | External + child block reference                                                  |
 | `mem` component                         | External + child block reference (mementries x memwidth normalized to byte_size)  |
 | `incrsaturate` / `decrsaturate`         | Counter saturate/wrap boundary behavior (this feature)                            |
@@ -142,12 +142,13 @@ Note: For `hwenable` / `hwmask`, equivalent semantics can be expressed using `rw
 
 ## 6. Architecturally Unnecessary
 
-SystemRDL properties that exist because SystemRDL is a description language only, but which are automatically resolved by RgGen's integrated spec + RTL/RAL generation architecture.
+SystemRDL properties that exist because SystemRDL is a description language only, and have no role in RgGen's integrated spec + RTL/RAL generation architecture. Some are automatically resolved by RgGen's own mechanisms; others have no corresponding concept and are simply ignored.
 
 | Feature                                              | RgGen Resolution                                                                                                                 |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `hdl_path` / `hdl_path_slice` / `hdl_path_gate` etc. | Automatically embedded during RAL generation, based on RgGen's own RTL hierarchy                                                 |
 | `donttest` / `dontcompare` / `internal`              | Handled standardly on the RAL generation side                                                                                    |
 | `sharedextbus`                                       | How external modules are wired up is left to the user; the property has no meaningful interpretation in RgGen's generation model |
+| `name`                                               | Descriptive display name for documentation; RgGen has no corresponding concept and silently ignores the property                  |
 
 **Input handling**: Silently discard (no warning needed). User-provided HDL paths would not match RgGen's generated RTL hierarchy anyway.
