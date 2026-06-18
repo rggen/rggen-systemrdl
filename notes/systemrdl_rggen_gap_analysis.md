@@ -8,17 +8,17 @@ A comparison of SystemRDL 2.0 against RgGen ([wiki](https://github.com/rggen/rgg
 
 SystemRDL concepts for which RgGen already provides equivalent or near-equivalent functionality. SystemRDL input can be mapped directly.
 
-| SystemRDL Concept             | RgGen Equivalent                            | Notes                                                                                     |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `regfile` component           | `register_file`                             | Hierarchical grouping                                                                     |
-| `external reg`                | `external` register type                    | Single external register                                                                  |
-| `encode` (enumeration)        | `label`                                     | Named enumerated values                                                                   |
-| `counter` (basic)             | `counter` bit field type                    | Supports up/down/clear                                                                    |
-| `swacc`/`swmod` (approximate) | `rwtrg` / `rotrg` / `wotrg`                 | Read/write trigger outputs                                                                |
-| `singlepulse` (approximate)   | `w0trg` / `w1trg`                           | Pulse-like trigger outputs                                                                |
-| `errextbus`                   | External bus interface `i_xxx_status` input | Error response from external implementation propagates through the existing status signal |
-| Register arrays               | `size` + `step`                             | Multi-dimensional supported                                                               |
-| Register overlap (10.1 h)     | Overlaid register pair                      | RgGen supports two registers at the same address when one is read-only and the other is write-only (or write-once-only) |
+| SystemRDL Concept             | RgGen Equivalent                            | Notes                                                                                                                                       |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `regfile` component           | `register_file`                             | Hierarchical grouping                                                                                                                       |
+| `external reg`                | `external` register type                    | Single external register                                                                                                                    |
+| `encode` (enumeration)        | `label`                                     | Named enumerated values                                                                                                                     |
+| `counter` (basic)             | `counter` bit field type                    | Supports up/down/clear                                                                                                                      |
+| `swacc`/`swmod` (approximate) | `rwtrg` / `rotrg` / `wotrg`                 | Read/write trigger outputs                                                                                                                  |
+| `singlepulse` (approximate)   | `w0trg` / `w1trg`                           | Pulse-like trigger outputs                                                                                                                  |
+| `errextbus`                   | External bus interface `i_xxx_status` input | Error response from external implementation propagates through the existing status signal                                                   |
+| Register arrays               | `size` + `step`                             | Multi-dimensional supported                                                                                                                 |
+| Register overlap (10.1 h)     | Overlaid register pair                      | RgGen supports two registers at the same address when one is read-only and the other is write-only (or write-once-only)                     |
 
 ---
 
@@ -50,36 +50,37 @@ Guidelines for mapping SystemRDL's `sw` / `hw` / `onread` / `onwrite` combinatio
 
 ### Modifiers
 
-| SystemRDL Property                    | RgGen Equivalent                         |
-| ------------------------------------- | ---------------------------------------- |
-| `we` / `wel` (SW write enable / lock) | `rwe` / `rwl`                            |
-| `hwclr` / `hwset`                     | `rwc` / `rws`                            |
+| SystemRDL Property                    | RgGen Equivalent                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `we` / `wel` (SW write enable / lock) | `rwe` / `rwl`                                                             |
+| `hwclr` / `hwset`                     | `rwc` / `rws`                                                             |
 | `next` (input source reference)       | Option on `ro` type; the referenced field/signal supplies the field value |
-| `reset` value                         | `initial_value`                          |
-| `reference`                           | `reference` (purpose determined by type) |
+| `reset` value                         | `initial_value`                                                           |
+| `reference`                           | `reference` (purpose determined by type)                                  |
 
 ---
 
-## 3. To Be Implemented
+## 3. Implementation Plan
 
-Features present in SystemRDL but missing from RgGen, with clear implementation value.
+Features for which an implementation plan or handling policy has been defined. Some are tracked as issues for future implementation; others have their handling policy documented in a separate notes file.
 
-| Feature                                                                | Issue                                             | Status |
-| ---------------------------------------------------------------------- | ------------------------------------------------- | ------ |
-| **Alias register type**                                                | [#287](https://github.com/rggen/rggen/issues/287) | Filed  |
-| **Interrupt support** (trigger extension + block-level aggregation)    | [#290](https://github.com/rggen/rggen/issues/290) | Filed  |
-| **External + child block reference**                                   | [#291](https://github.com/rggen/rggen/issues/291) | Filed  |
-| **Counter saturate/wrap boundary behavior** (spec-level specification) | [#292](https://github.com/rggen/rggen/issues/292) | Filed  |
+| Feature                                                                | Issue                                                | Status         |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- | -------------- |
+| **Alias register type**                                                | rggen/rggen#287                                      | Filed          |
+| **Interrupt support** (trigger extension + block-level aggregation)    | rggen/rggen#290                                      | Filed          |
+| **External + child block reference**                                   | rggen/rggen#291                                      | Filed          |
+| **Counter saturate/wrap boundary behavior** (spec-level specification) | rggen/rggen#292                                      | Filed          |
 | **User-Defined Properties (UDP)**                                      | See [udp_handling_policy.md](udp_handling_policy.md) | Policy defined |
+| **`precedence` property handling**                                     | See [precedence_handling_policy.md](precedence_handling_policy.md) | Policy defined |
 
 ### Mapping Coverage by Issue
 
 | SystemRDL Feature                       | Corresponding RgGen Extension                                                     |
 | --------------------------------------- | --------------------------------------------------------------------------------- |
-| `alias` keyword                         | #287 alias register type                                                          |
-| `intr` field property + sticky variants | #290 (existing `w1c` family + trigger + aggregation)                              |
-| Trigger mode (level/edge)               | #290 `trigger` option                                                             |
-| Interrupt aggregation (OR output)       | #290 block-level `interrupt` attribute                                            |
+| `alias` keyword                         | rggen/rggen#287 alias register type                                               |
+| `intr` field property + sticky variants | rggen/rggen#290 (existing `w1c` family + trigger + aggregation)                   |
+| Trigger mode (level/edge)               | rggen/rggen#290 `trigger` option                                                  |
+| Interrupt aggregation (OR output)       | rggen/rggen#290 block-level `interrupt` attribute                                 |
 | `external regfile { ... }`              | External + child block reference                                                  |
 | `mem` component                         | External + child block reference (mementries x memwidth normalized to byte_size)  |
 | `incrsaturate` / `decrsaturate`         | Counter saturate/wrap boundary behavior (this feature)                            |
@@ -116,19 +117,19 @@ Features that exist in SystemRDL but are deliberately not supported in RgGen. **
 
 ### 5.2 No Corresponding Feature
 
-| Feature                                  | Notes                                                                                                                                                                          |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Field overlap within a register (10.1 d) | RgGen does not have a mechanism to place multiple fields at overlapping bit positions within a register. The SystemRDL exception for read-only / write-only pairs is rejected. |
-| `precedence` (10.6.1 b, 9.10)            | RgGen fixes hardware-side precedence in all field types (software writes are inherently retryable by the host, so hardware precedence is the safer default). The SystemRDL default of `precedence = sw` (9.10 a-1) is the opposite of RgGen's behavior, so accepting a field without an explicit `precedence` would silently invert the semantics. The user is therefore required to make the intent explicit by setting `precedence = hw` -- typically via `default precedence = hw;` at the addrmap or register scope. Any effective value of `sw` (whether by omission or by explicit `precedence = sw`) is an error. |
+| Feature                                  | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Field overlap within a register (10.1 d) | RgGen does not have a mechanism to place multiple fields at overlapping bit positions within a register. The SystemRDL exception for read-only / write-only pairs is rejected.                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ### 5.3 Low Usage Frequency
 
-| Feature                                            | Notes                                                                                                                                                                                                                                                                                                           |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `anded` / `ored` / `xored` (field-level reduction) | Rare in practice; interrupt aggregation use case is covered by #290                                                                                                                                                                                                                                             |
-| `swacc` / `swmod` (as standalone properties)       | Approximate functionality covered by `rwtrg`/`rotrg`/`wotrg`; demand for orthogonal combinations is low                                                                                                                                                                                                         |
-| `hwenable` / `hwmask` (bit-level HW write control) | Rare in practice; per-bit control can be expressed by splitting into separate fields with `rwe`/`rwl`                                                                                                                                                                                                           |
-| `bridge` addrmap (multi-view)                      | Limited real-world use                                                                                                                                                                                                                                                                                          |
+| Feature                                            | Notes                                                                                                   |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `anded` / `ored` / `xored` (field-level reduction) | Rare in practice; interrupt aggregation use case is covered by rggen/rggen#290                          |
+| `swacc` / `swmod` (as standalone properties)       | Approximate functionality covered by `rwtrg`/`rotrg`/`wotrg`; demand for orthogonal combinations is low |
+| `hwenable` / `hwmask` (bit-level HW write control) | Rare in practice; per-bit control can be expressed by splitting into separate fields with `rwe`/`rwl`   |
+| `bridge` addrmap (multi-view)                      | Limited real-world use                                                                                  |
+| `struct` definition and usage                      | Used only within SystemRDL source (UDP types, component parameters, struct members) and does not survive elaboration. Rare in practical CSR descriptions. |
 
 Note: For `hwenable` / `hwmask`, equivalent semantics can be expressed using `rwe` / `rwl`.
 
@@ -144,11 +145,11 @@ Note: For `hwenable` / `hwmask`, equivalent semantics can be expressed using `rw
 
 SystemRDL properties that exist because SystemRDL is a description language only, and have no role in RgGen's integrated spec + RTL/RAL generation architecture. Some are automatically resolved by RgGen's own mechanisms; others have no corresponding concept and are simply ignored.
 
-| Feature                                              | RgGen Resolution                                                                                                                 |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `hdl_path` / `hdl_path_slice` / `hdl_path_gate` etc. | Automatically embedded during RAL generation, based on RgGen's own RTL hierarchy                                                 |
-| `donttest` / `dontcompare` / `internal`              | Handled standardly on the RAL generation side                                                                                    |
-| `sharedextbus`                                       | How external modules are wired up is left to the user; the property has no meaningful interpretation in RgGen's generation model |
+| Feature                                              | RgGen Resolution                                                                                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `hdl_path` / `hdl_path_slice` / `hdl_path_gate` etc. | Automatically embedded during RAL generation, based on RgGen's own RTL hierarchy                                                  |
+| `donttest` / `dontcompare` / `internal`              | Handled standardly on the RAL generation side                                                                                     |
+| `sharedextbus`                                       | How external modules are wired up is left to the user; the property has no meaningful interpretation in RgGen's generation model  |
 | `name`                                               | Descriptive display name for documentation; RgGen has no corresponding concept and silently ignores the property                  |
 
 **Input handling**: Silently discard (no warning needed). User-provided HDL paths would not match RgGen's generated RTL hierarchy anyway.
