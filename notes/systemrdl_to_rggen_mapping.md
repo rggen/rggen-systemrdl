@@ -4,35 +4,43 @@ This document records confirmed design decisions for the SystemRDL front-end to 
 register-map conversion. The SystemRDL support is an add-on feature; perfect coverage is a
 non-goal. Deferred / not-yet-supported items are tracked separately in `systemrdl_to_rggen_TODO.md`.
 
-## Scope (first release)
+## Scope
 - Root `addrmap` → RgGen register_block
+- `regfile` → RgGen register_file
 - `reg` → RgGen register
 - `field` → RgGen bit_field
-- `regfile` and nested `addrmap` are out of scope for the first release (front-end does not yet
-  support them). See TODO.
+- External `reg`/`regfile` and nested `addrmap` → RgGen `external` region on the enclosing map,
+  plus a separately-converted register_block (see "External components" below).
 
 ## Layer correspondence
 
-| SystemRDL      | RgGen          |
-| -------------- | -------------- |
-| root `addrmap` | register_block |
-| `reg`          | register       |
-| `field`        | bit_field      |
+| SystemRDL              | RgGen                          |
+| ---------------------- | ------------------------------ |
+| root `addrmap`         | register_block                 |
+| `regfile`              | register_file                  |
+| `reg`                  | register                       |
+| `field`                | bit_field                      |
+| nested `addrmap`       | `external` region + its own register_block |
+| external `reg`/`regfile` | `external` region + its own register_block |
 
 ## Array handling & name conversion
-- Only `reg` (and, later, `regfile`/`addrmap`) can be arrays. **`field` is never an array**: in a
+- `reg`, `regfile`, and `addrmap` can be arrays. **`field` is never an array**: in a
   field declaration `foo[4]` specifies bit WIDTH (and `foo[7:0]` specifies msb:lsb), NOT an array
   subscript. So the flatten/`__`-subscript handling below does not apply to fields; a field's
   `[...]` maps to bit_assignment `lsb`/`width` instead (see field layer).
-- Arrays (reg etc.) are flattened into individual elements. No reconstruction back into RgGen
+- Arrays are flattened into individual elements. No reconstruction back into RgGen
   `size` / `sequence_size`.
 - Subscripts are rendered into the name with a double-underscore `__` separator:
   - `foo[0]` → `foo__0`
   - multi-dimensional `foo[1][0]` → `foo__1__0` (all dimensions use `__`, consistently)
+- The same `__` separator is used to join hierarchy levels when a nested subtree is carved out as
+  its own register_block (see "External components" below): the carved-out block name is the
+  ancestor instance names joined with `__` (e.g. regfile `foo[2]` containing external reg `bar`
+  → `foo__0__bar`).
 - Conversion-time validation: any SystemRDL instance name (all layers, arrayed or not) that
-  itself contains `__` is an ERROR. This reserves `__` exclusively as the array-expansion
-  separator, eliminating name-collision ambiguity at its root (rather than merely lowering
-  collision probability).
+  itself contains `__` is an ERROR. This reserves `__` exclusively as the array-expansion /
+  hierarchy-join separator, eliminating name-collision ambiguity at its root (rather than merely
+  lowering collision probability).
   - SystemRDL lexical rules (spec 5.1.1) permit `__` in identifiers; this restriction is an
     extra constraint imposed only when using the RgGen-conversion add-on feature.
 - Post-conversion duplicate-name detection is delegated to RgGen's existing validation; the
@@ -77,8 +85,11 @@ errors out rather than silently ignoring them (silent drop would change the desi
 - `errextbus` — indicates the (external) addrmap instance has an error input. RgGen's
   `rggen_bus_if` has an error input by default, so RgGen always satisfies the `errextbus`
   behavior. Ignoring the property therefore does not lose design intent (unlike the error-listed
-  properties above). Note this is only meaningful for external components, which are out of
-  first-release scope; the ignore rule applies once external support lands.
+  properties above).
+- `accesswidth` — IGNORED. RgGen derives access width from its `bus_width` (RgGen config, not
+  mapped from SystemRDL). Safe to ignore: if `accesswidth` disagrees with `bus_width`, the
+  resulting addresses violate RgGen's `address % bus_width == 0` rule and are caught by the later
+  address check.
 
 ## reg → register
 
@@ -92,7 +103,9 @@ errors out rather than silently ignoring them (silent drop would change the desi
 
 ### register-type notes
 - `default` — normal reg. Supported (fixed for first release).
-- `external` — corresponds to SystemRDL `mem` / external / nested `addrmap`. Out of first-release scope.
+- `external` — an external `reg` (`Reg#external` = true) is carved out into an `external` region
+  plus its own register_block; see the "External components" section. (SystemRDL `mem` would also
+  land here but is not yet in scope.)
 - `indirect` — **permanently not applicable.** RgGen `indirect` multiplexes multiple registers
   at one address, selected by index bit fields. SystemRDL has NO indirect-access mechanism, and
   SystemRDL `alias` is a DIFFERENT concept (a second name/address onto the same storage, not
@@ -109,8 +122,24 @@ converter errors out rather than silently ignoring them.
 ### reg: properties that are IGNORED (safe to drop)
 - `errextbus` — indicates the (external) regfile has an error input. Same rationale as the
   addrmap `errextbus`: RgGen's `rggen_bus_if` has an error input by default, so ignoring it loses
-  no design intent. Only meaningful for external components (out of first-release scope); the
-  ignore rule applies once external support lands.
+  no design intent.
+- `accesswidth` — IGNORED (same rationale as addrmap: bus_width is RgGen config; a mismatch is
+  caught by the later `address % bus_width == 0` check).
+
+## regfile → register_file
+
+| RgGen register_file | SystemRDL regfile        | Conversion / notes |
+| ------------------- | ------------------------ | ------------------ |
+| `name`              | instance name (`name`)   | Apply `__` restriction check; arrayed regfiles are flattened with `__` subscript conversion. |
+| `offset_address`    | `address` property       | Direct copy (offset from the parent). |
+| `size`              | (not used)               | Arrays are flattened, so repetition `size` is not used. |
+| `comment`           | `desc` property          | Used directly. |
+
+### regfile: properties handled like addrmap/reg
+- `sharedextbus` — ERROR (no RgGen feature to merge external interfaces; same as addrmap).
+- `errextbus` — IGNORED (rggen_bus_if has an error input by default; same as addrmap/reg).
+- `accesswidth` — IGNORED (same as addrmap/reg; bus_width is RgGen config, mismatch caught by the address check).
+- `external` — an external regfile is carved out; see the "External components" section below.
 
 ## field → bit_field
 
@@ -135,8 +164,8 @@ give the final positions.
 - `resetsignal` (user-defined reset signal) — RgGen does not support user-defined reset signals,
   so specifying `resetsignal` is unsupported. ERROR.
 - Properties/values with no corresponding RgGen feature — ERROR if used: `wel`, `swmod`, `anded`,
-  `ored`, `xored`, `hwenable`, `hwmask`, `ruser` (onread=ruser), `wuser` (onwrite=wuser), and
-  `hw = rw1` / `hw = w1` (hardware-side write-once).
+  `ored`, `xored`, `hwenable`, `hwmask`, `paritycheck`, `ruser` (onread=ruser),
+  `wuser` (onwrite=wuser), and `hw = rw1` / `hw = w1` (hardware-side write-once).
 - Property reference used anywhere — ERROR. SystemRDL references come in two kinds: instance
   references and property references (e.g. `other->prop`). RgGen supports instance references
   only. (Applies wherever a reference is used: `ro`/next, rwl/rwe swwe/swwel, rwc/rws hwclr/hwset,
@@ -156,3 +185,29 @@ Handled per a project-level "precedence ignore mode" flag (see rggen/rggen-syste
   regardless; users set `default precedence = hw;` at a scope.)
 - Ignore mode ON: `precedence` is not consulted; all fields generated with hw precedence, no
   diagnostic.
+
+## External components (external reg / external regfile / nested addrmap)
+
+Three kinds of subtree represent an independent implementation boundary and are all handled the
+same way:
+- an external `reg` (`Reg#external` = true),
+- an external `regfile` (`RegFile#external` = true),
+- a nested (non-root) `addrmap` instance. (`AddrMap` has no `external` property; external/internal
+  does not apply to an addrmap itself, so the trigger here is structural: any addrmap below the
+  root counts.)
+
+Each such subtree produces TWO outputs:
+1. On the enclosing map, reserve its address region as an RgGen `external` register. Its `address`
+   and `size` come from the model (`address`/`size`).
+2. Separately, convert the subtree as its OWN register_block, by running the normal register_block
+   conversion with the subtree as the entry point. This is what lets RgGen actually generate the
+   contents — RgGen cannot generate at reg/regfile granularity, so the contents must be wrapped in
+   a register_block.
+
+Rules for the carved-out register_block:
+- Name: the ancestor instance names joined with `__` (e.g. regfile `foo[2]` containing external
+  reg `bar` → `foo__0__bar`). Array subscripts also use `__`, so the separator is uniform.
+- Addresses inside the carved-out block are re-based to a 0 offset (it is an independent map).
+- `bridge` is NOT part of the trigger; it only indicates whether the external boundary involves
+  bus/protocol conversion.
+
