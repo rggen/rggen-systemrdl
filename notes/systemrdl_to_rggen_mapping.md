@@ -9,8 +9,10 @@ non-goal. Deferred / not-yet-supported items are tracked separately in `systemrd
 - `regfile` → RgGen register_file
 - `reg` → RgGen register
 - `field` → RgGen bit_field
-- External `reg`/`regfile` and nested `addrmap` → RgGen `external` region on the enclosing map,
-  plus a separately-converted register_block (see "External components" below).
+- Nested `addrmap` → RgGen `external` region on the enclosing map; the addrmap is also converted
+  to its own register_block through the normal flow (see "External components" below).
+- External `reg`/`regfile` → ERROR in the first release (deferred; see "External components").
+- `mem` → RgGen `external` register (region reservation only; see "mem" below).
 
 ## Layer correspondence
 
@@ -21,7 +23,8 @@ non-goal. Deferred / not-yet-supported items are tracked separately in `systemrd
 | `reg`                  | register                       |
 | `field`                | bit_field                      |
 | nested `addrmap`       | `external` region + its own register_block |
-| external `reg`/`regfile` | `external` region + its own register_block |
+| external `reg`/`regfile` | ERROR (first release; deferred)          |
+| `mem`                  | `external` register (region reservation only) |
 
 ## Array handling & name conversion
 - `reg`, `regfile`, and `addrmap` can be arrays. **`field` is never an array**: in a
@@ -33,13 +36,9 @@ non-goal. Deferred / not-yet-supported items are tracked separately in `systemrd
 - Subscripts are rendered into the name with a double-underscore `__` separator:
   - `foo[0]` → `foo__0`
   - multi-dimensional `foo[1][0]` → `foo__1__0` (all dimensions use `__`, consistently)
-- The same `__` separator is used to join hierarchy levels when a nested subtree is carved out as
-  its own register_block (see "External components" below): the carved-out block name is the
-  ancestor instance names joined with `__` (e.g. regfile `foo[2]` containing external reg `bar`
-  → `foo__0__bar`).
 - Conversion-time validation: any SystemRDL instance name (all layers, arrayed or not) that
-  itself contains `__` is an ERROR. This reserves `__` exclusively as the array-expansion /
-  hierarchy-join separator, eliminating name-collision ambiguity at its root (rather than merely
+  itself contains `__` is an ERROR. This reserves `__` exclusively as the array-expansion
+  separator, eliminating name-collision ambiguity at its root (rather than merely
   lowering collision probability).
   - SystemRDL lexical rules (spec 5.1.1) permit `__` in identifiers; this restriction is an
     extra constraint imposed only when using the RgGen-conversion add-on feature.
@@ -80,6 +79,13 @@ errors out rather than silently ignoring them (silent drop would change the desi
 - `rsvdset` / `rsvdsetX` — control the read value of reserved / unassigned regions (whether
   unassigned bits read as 1, or as X/undefined). RgGen has no mechanism to specify the read value
   of unassigned regions, so there is nowhere to map these. ERROR if set.
+- `msb0` — ERROR if set (true). `msb0` reverses bit numbering so that `regwidth-1` is the least
+  significant bit (spec 13.4.1), the opposite of the default `lsb0` mode. RgGen assumes `lsb0`
+  numbering; under `msb0` the field `lsb`/`msb` positions would be interpreted in reverse and
+  would be misplaced, so the mode cannot be represented. (`lsb0` is the default and needs no
+  action; it is not an error. `msb0` and `lsb0` are mutually exclusive per spec 13.4.1.)
+  Inference of `msb0` from the first field's explicit bit indices (spec 13.4.2) is unsupported by
+  the front-end, so only an explicitly set `msb0` property reaches the converter.
 
 ### addrmap: properties that are IGNORED (safe to drop)
 - `errextbus` — indicates the (external) addrmap instance has an error input. RgGen's
@@ -103,9 +109,8 @@ errors out rather than silently ignoring them (silent drop would change the desi
 
 ### register-type notes
 - `default` — normal reg. Supported (fixed for first release).
-- `external` — an external `reg` (`Reg#external` = true) is carved out into an `external` region
-  plus its own register_block; see the "External components" section. (SystemRDL `mem` would also
-  land here but is not yet in scope.)
+- `external` — an external `reg` (`Reg#external` = true) is NOT supported in the first release →
+  ERROR. See the "External components" section (deferred design in `external_reg_regfile_mapping.md`).
 - `indirect` — **permanently not applicable.** RgGen `indirect` multiplexes multiple registers
   at one address, selected by index bit fields. SystemRDL has NO indirect-access mechanism, and
   SystemRDL `alias` is a DIFFERENT concept (a second name/address onto the same storage, not
@@ -139,7 +144,8 @@ converter errors out rather than silently ignoring them.
 - `sharedextbus` — ERROR (no RgGen feature to merge external interfaces; same as addrmap).
 - `errextbus` — IGNORED (rggen_bus_if has an error input by default; same as addrmap/reg).
 - `accesswidth` — IGNORED (same as addrmap/reg; bus_width is RgGen config, mismatch caught by the address check).
-- `external` — an external regfile is carved out; see the "External components" section below.
+- `external` — an external regfile is NOT supported in the first release → ERROR. See the
+  "External components" section (deferred design in `external_reg_regfile_mapping.md`).
 
 ## field → bit_field
 
@@ -186,28 +192,69 @@ Handled per a project-level "precedence ignore mode" flag (see rggen/rggen-syste
 - Ignore mode ON: `precedence` is not consulted; all fields generated with hw precedence, no
   diagnostic.
 
-## External components (external reg / external regfile / nested addrmap)
+## External components
 
-Three kinds of subtree represent an independent implementation boundary and are all handled the
-same way:
-- an external `reg` (`Reg#external` = true),
-- an external `regfile` (`RegFile#external` = true),
-- a nested (non-root) `addrmap` instance. (`AddrMap` has no `external` property; external/internal
-  does not apply to an addrmap itself, so the trigger here is structural: any addrmap below the
-  root counts.)
+### Nested addrmap → external region
 
-Each such subtree produces TWO outputs:
-1. On the enclosing map, reserve its address region as an RgGen `external` register. Its `address`
-   and `size` come from the model (`address`/`size`).
-2. Separately, convert the subtree as its OWN register_block, by running the normal register_block
-   conversion with the subtree as the entry point. This is what lets RgGen actually generate the
-   contents — RgGen cannot generate at reg/regfile granularity, so the contents must be wrapped in
-   a register_block.
+A nested (non-root) `addrmap` instance represents an independent implementation boundary.
+(`AddrMap` has no `external` property; external/internal does not apply to an addrmap itself, so
+the trigger is structural: any addrmap below the root counts.)
 
-Rules for the carved-out register_block:
-- Name: the ancestor instance names joined with `__` (e.g. regfile `foo[2]` containing external
-  reg `bar` → `foo__0__bar`). Array subscripts also use `__`, so the separator is uniform.
-- Addresses inside the carved-out block are re-based to a 0 offset (it is an independent map).
-- `bridge` is NOT part of the trigger; it only indicates whether the external boundary involves
-  bus/protocol conversion.
+For a nested addrmap, the only thing this conversion does is reserve its address region on the
+enclosing map as an RgGen `external` register (its `address`/`size` come from the model).
+
+The addrmap's own contents do NOT need a special carve-out step here: an addrmap is itself an RTL
+generation unit with its own definition, so running that definition through the normal
+register_block conversion (the same path used for the root addrmap) produces its register_block.
+
+`bridge` is NOT part of the trigger; it only indicates whether the external boundary involves
+bus/protocol conversion.
+
+### External reg / external regfile → ERROR (first release)
+
+An external `reg` (`Reg#external` = true) and an external `regfile` (`RegFile#external` = true)
+are NOT supported in the first release and are ERRORs. Silently dropping them would lose design
+intent, so the converter errors out rather than ignoring the external boundary.
+
+The conversion scheme worked out for them — reserve the region on the enclosing map and wrap the
+contents in a separately-converted register_block (RgGen cannot generate at reg/regfile
+granularity, so the wrapping is required) — is recorded separately in
+`external_reg_regfile_mapping.md` for when the feature is picked up later.
+
+
+## mem → external register
+
+A SystemRDL `mem` is mapped to an RgGen `external` register. `external` is exactly the RgGen
+construct intended for this purpose: it reserves an address region whose contents are provided by
+a user implementation. The memory contents are therefore not generated by RgGen (and not by the
+converter); the converter only reserves the region.
+
+Because the contents are a user implementation, a `mem` is NOT handled like the "External
+components" above: it produces no carved-out register_block, only the region reservation on the
+enclosing map.
+
+| RgGen external | SystemRDL mem          | Conversion / notes |
+| -------------- | ---------------------- | ------------------ |
+| `name`         | instance name (`name`) | Apply `__` restriction check; arrayed mems are flattened with `__` subscript conversion. |
+| `offset_address` | `address` property   | Direct copy (offset from the parent), same as reg/regfile. |
+| `size`         | model `size` (byte size), converted | Element count in `bus_width` units; see below. |
+| `comment`      | `desc` property        | Used directly. |
+
+### mem: size calculation
+RgGen's `external` `size` is an element count expressed in `bus_width` units (how many
+`bus_width`-wide accesses the region occupies), NOT a byte size. The front-end already provides
+the mem's occupied byte size as the model's `size`, so the converter does not compute it from
+`memwidth`/`mementries`; it only converts that byte size into `bus_width` units:
+
+```
+size = byte_size / (bus_width / 8)
+```
+
+where `byte_size` is the model's `size` (the front-end computes it from `entry_width` — `memwidth`
+rounded up to a power-of-two number of bits — times `mementries`).
+
+- `bus_width` is an RgGen config value, not taken from SystemRDL (same policy as `accesswidth`,
+  which is IGNORED elsewhere).
+- If `byte_size` is not an integer multiple of `bus_width / 8`, the region cannot be expressed as
+  a whole number of `bus_width`-wide elements → ERROR.
 
