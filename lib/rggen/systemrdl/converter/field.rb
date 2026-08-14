@@ -33,19 +33,21 @@ module RgGen
 
         def convert_type(rdl_model, input_data)
           [
-            :convert_w0crs, :convert_w1crs, :convert_wcrs, :convert_w0src, :convert_w1src,
-            :convert_wsrc, :convert_rohw, :convert_rwhw, :convert_rc, :convert_rs, :convert_wrc,
-            :convert_wrs, :convert_w0c, :convert_w1c, :convert_w0s, :convert_w1s, :convert_w0t,
-            :convert_w1t, :convert_wc, :convert_woc, :convert_ws, :convert_wos, :convert_rwl,
-            :convert_rwe, :convert_rwc, :convert_rws, :convert_rwtrg, :convert_rotrg_ref,
-            :convert_rotrg_ext, :convert_wotrg, :convert_w1trg, :convert_rof, :convert_ro_ref,
-            :convert_ro_ext, :convert_wo, :convert_rw, :convert_w1, :convert_wo1
+            :convert_rw, :convert_rof, :convert_ro_ext, :convert_ro_ref, :convert_wo, :convert_rohw,
+            :convert_rwhw, :convert_rc, :convert_rs, :convert_wrc, :convert_wrs, :convert_w0c,
+            :convert_w1c, :convert_w0s, :convert_w1s, :convert_w0t, :convert_w1t, :convert_wc,
+            :convert_woc, :convert_ws, :convert_wos, :convert_w0crs, :convert_w1crs, :convert_wcrs,
+            :convert_w0src, :convert_w1src, :convert_wsrc, :convert_rwl, :convert_rwe, :convert_rwc,
+            :convert_rws, :convert_rwtrg, :convert_rotrg_ext, :convert_rotrg_ref, :convert_wotrg,
+            :convert_w1trg, :convert_w1, :convert_wo1
           ].each do |converter|
             break if __send__(converter, rdl_model, input_data)
           end
         end
 
         def convert_rw(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           return unless sw == :rw && (hw in :na | :r)
@@ -54,6 +56,8 @@ module RgGen
         end
 
         def convert_rof(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           reset = rdl_model.property(:reset)
@@ -63,6 +67,8 @@ module RgGen
         end
 
         def convert_ro_ext(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           return unless sw == :r && (hw in :rw | :w)
@@ -71,6 +77,8 @@ module RgGen
         end
 
         def convert_ro_ref(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :next)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           ref = rdl_model.property(:next)
@@ -81,6 +89,8 @@ module RgGen
         end
 
         def convert_wo(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           return unless sw == :w && (hw in :na | :r)
@@ -89,6 +99,8 @@ module RgGen
         end
 
         def convert_rohw(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :we)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           we = rdl_model.property(:we)
@@ -99,6 +111,8 @@ module RgGen
         end
 
         def convert_rwhw(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :we)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           we = rdl_model.property(:we)
@@ -109,6 +123,8 @@ module RgGen
         end
 
         def convert_rc(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :rclr, :onread, :hwset)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           rclr = rdl_model.rclr || rdl_model.onread == :rclr
@@ -119,6 +135,8 @@ module RgGen
         end
 
         def convert_rs(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :rset, :onread, :hwclr)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           rset = rdl_model.rset || rdl_model.onread == :rset
@@ -129,6 +147,8 @@ module RgGen
         end
 
         def convert_wrc(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :rclr, :onread)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           rclr = rdl_model.rclr || rdl_model.onread == :rclr
@@ -138,6 +158,8 @@ module RgGen
         end
 
         def convert_wrs(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :rset, :onread)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           rset = rdl_model.rset || rdl_model.onread == :rset
@@ -147,6 +169,8 @@ module RgGen
         end
 
         def convert_w0c(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :hwset)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wzc = rdl_model.onwrite == :wzc
@@ -157,6 +181,8 @@ module RgGen
         end
 
         def convert_w1c(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :woclr, :onwrite, :hwset)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           woclr = rdl_model.woclr || rdl_model.onwrite == :woclr
@@ -167,6 +193,8 @@ module RgGen
         end
 
         def convert_w0s(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :hwclr)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wzs = rdl_model.onwrite == :wzs
@@ -177,6 +205,8 @@ module RgGen
         end
 
         def convert_w1s(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :woset, :onwrite, :hwclr)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           woset = rdl_model.woset || rdl_model.onwrite == :woset
@@ -187,6 +217,8 @@ module RgGen
         end
 
         def convert_w0t(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wzt = rdl_model.onwrite == :wzt
@@ -196,6 +228,8 @@ module RgGen
         end
 
         def convert_w1t(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wot = rdl_model.onwrite == :wot
@@ -205,42 +239,56 @@ module RgGen
         end
 
         def convert_wc(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :hwset)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wclr = rdl_model.onwrite == :wclr
-          return unless sw == :rw && (hw in :na | :r) && wclr
+          hwset = set_true?(rdl_model, :hwset)
+          return unless sw == :rw && (hw in :na | :r) && wclr && hwset
 
           input_data[:type] = to_input_value(:wc, nil)
         end
 
         def convert_woc(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :hwset)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wclr = rdl_model.onwrite == :wclr
-          return unless sw == :w && (hw in :na | :r) && wclr
+          hwset = set_true?(rdl_model, :hwset)
+          return unless sw == :w && (hw in :na | :r) && wclr && hwset
 
           input_data[:type] = to_input_value(:woc, nil)
         end
 
         def convert_ws(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :hwclr)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wset = rdl_model.onwrite == :wset
-          return unless sw == :rw && (hw in :na | :r) && wset
+          hwclr = set_true?(rdl_model, :hwclr)
+          return unless sw == :rw && (hw in :na | :r) && wset && hwclr
 
           input_data[:type] = to_input_value(:ws, nil)
         end
 
         def convert_wos(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :hwclr)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wset = rdl_model.onwrite == :wset
-          return unless sw == :w && (hw in :na | :r) && wset
+          hwclr = set_true?(rdl_model, :hwclr)
+          return unless sw == :w && (hw in :na | :r) && wset && hwclr
 
           input_data[:type] = to_input_value(:wos, nil)
         end
 
         def convert_w0crs(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :rset, :onread)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wzc = rdl_model.onwrite == :wzc
@@ -251,6 +299,8 @@ module RgGen
         end
 
         def convert_w1crs(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :woclr, :onwrite, :rset, :onread)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           woclr = rdl_model.woclr || rdl_model.onwrite == :woclr
@@ -261,6 +311,8 @@ module RgGen
         end
 
         def convert_wcrs(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :rset, :onread)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wclr = rdl_model.onwrite == :wclr
@@ -271,6 +323,8 @@ module RgGen
         end
 
         def convert_w0src(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :rclr, :onread)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wzs = rdl_model.onwrite == :wzs
@@ -281,6 +335,8 @@ module RgGen
         end
 
         def convert_w1src(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :woset, :onwrite, :rclr, :onread)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           woset = rdl_model.woset || rdl_model.onwrite == :woset
@@ -291,6 +347,8 @@ module RgGen
         end
 
         def convert_wsrc(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :onwrite, :rclr, :onread)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           wset = rdl_model.onwrite == :wset
@@ -301,6 +359,8 @@ module RgGen
         end
 
         def convert_rwl(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :swwel)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           swwel = rdl_model.property(:swwel)
@@ -311,6 +371,8 @@ module RgGen
         end
 
         def convert_rwe(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :swwe)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           swwe = rdl_model.property(:swwe)
@@ -321,6 +383,8 @@ module RgGen
         end
 
         def convert_rwc(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :hwclr)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           hwclr = rdl_model.property(:hwclr)
@@ -331,6 +395,8 @@ module RgGen
         end
 
         def convert_rws(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :hwset)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           hwset = rdl_model.property(:hwset)
@@ -341,6 +407,8 @@ module RgGen
         end
 
         def convert_rwtrg(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :swacc)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           swacc = rdl_model.swacc
@@ -350,6 +418,8 @@ module RgGen
         end
 
         def convert_rotrg_ext(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :swacc)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           swacc = rdl_model.swacc
@@ -359,6 +429,8 @@ module RgGen
         end
 
         def convert_rotrg_ref(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :next, :swacc)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           ref = rdl_model.property(:next)
@@ -370,6 +442,8 @@ module RgGen
         end
 
         def convert_wotrg(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :swacc)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           swacc = rdl_model.swacc
@@ -379,6 +453,8 @@ module RgGen
         end
 
         def convert_w1trg(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw, :singlepulse)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           singlepulse = rdl_model.singlepulse
@@ -388,6 +464,8 @@ module RgGen
         end
 
         def convert_w1(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           return unless sw == :rw1 && (hw in :na | :r)
@@ -396,11 +474,23 @@ module RgGen
         end
 
         def convert_wo1(rdl_model, input_data)
+          return unless only_set?(rdl_model, :sw, :hw)
+
           sw = rdl_model.sw
           hw = rdl_model.hw
           return unless sw == :w1 && (hw in :na | :r)
 
           input_data[:type] = to_input_value(:wo1, nil)
+        end
+
+        def only_set?(rdl_model, *allowed_properties)
+          properties = [
+            :sw, :hw, :next, :onread, :rclr, :rset, :onwrite, :woset, :woclr,
+            :swwe, :swwel, :swacc, :singlepulse, :we, :hwclr, :hwset
+          ]
+          (properties - allowed_properties).none? do |property|
+            rdl_model.property(property).value
+          end
         end
       end
     end
