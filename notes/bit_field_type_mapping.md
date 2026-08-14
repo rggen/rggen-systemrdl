@@ -27,7 +27,7 @@ repeated here.
 | `ro` (ext) | sw=r, hw drives value (hw=rw/w) | Value comes from hardware. |
 | `ro` (ref) | sw=r, hw=r/na, `next` = another field | Value comes from the referenced field (`reference` = the `next` target). |
 | `rof`  | sw=r, hw=na | Returns fixed `initial_value` (constant). hw=na only (not r). |
-| `wo`   | sw=w, hw∈{r,na} | Write-only storage. |
+| `wo`   | sw=w, hw=r | Write-only storage. |
 | `rohw` | sw=r, hw∈{rw,w}, `we` required (true or another field) | HW value taken in under `we` (valid). |
 | `rwhw` | sw=rw, hw∈{rw,w}, `we` required (true or another field) | read/write version of `rohw`; HW value taken in under `we` (valid). `we` avoids the SW-write-loss error. |
 | `rowo` | — NOT SUPPORTED | Would require merging two fields (sw=r + sw=w) at the same bit position. Bit-field overlap is an ERROR (see below). |
@@ -54,8 +54,8 @@ toggle-family takes neither.
 | `w1t`  | sw=rw, hw∈{r,na}, onwrite=wot  | |
 | `wc`   | sw=rw, hw∈{r,na}, onwrite=wclr, hwset=true | mask NOT specifiable. |
 | `ws`   | sw=rw, hw∈{r,na}, onwrite=wset, hwclr=true | |
-| `woc`  | sw=w,  hw∈{r,na}, onwrite=wclr, hwset=true | write-only version of wc. |
-| `wos`  | sw=w,  hw∈{r,na}, onwrite=wset, hwclr=true | write-only version of ws. |
+| `woc`  | sw=w, hw=r, onwrite=wclr, hwset=true | write-only version of wc. |
+| `wos`  | sw=w, hw=r, onwrite=wset, hwclr=true | write-only version of ws. |
 
 ### Write + read combined (all: sw=rw, hw∈{r,na})
 | RgGen type | SystemRDL combination |
@@ -91,7 +91,7 @@ toggle-family takes neither.
 | RgGen type | SystemRDL combination | Notes |
 | ---------- | --------------------- | ----- |
 | `w1`  | sw=rw1, hw∈{r,na} | |
-| `wo1` | sw=w1,  hw∈{r,na} | |
+| `wo1` | sw=w1, hw=r | |
 
 ### Special / not generated
 | RgGen type | Status |

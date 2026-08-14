@@ -19,7 +19,7 @@ Legend:
 | `ro` (ext)  | r | rw/w |    |     |         |       |       |      |       |      |       |             |
 | `ro` (ref)  | r | r/na | ref |    |         |       |       |      |       |      |       |             | 
 | `rof`      | r    | na    |      |        |         |       |       |      |       |      |       |             |
-| `wo`       | w    | r/na  |      |        |         |       |       |      |       |      |       |             |
+| `wo`       | w    | r     |      |        |         |       |       |      |       |      |       |             |
 | `rohw` (ext) | r  | rw/w  |      |        |         |       |       |      |       | true |       |             |
 | `rohw` (ref) | r  | rw/w  |      |        |         |       |       |      |       | ref  |       |             |
 | `rwhw` (ext) | rw | rw/w  |      |        |         |       |       |      |       | true |       |             |
@@ -36,8 +36,8 @@ Legend:
 | `w1t`      | rw   | r/na  |      |        | wot     |       |       |      |       |      |       |             |
 | `wc`       | rw   | r/na  |      |        | wclr    | true  |       |      |       |      |       |             |
 | `ws`       | rw   | r/na  |      |        | wset    |       | true  |      |       |      |       |             |
-| `woc`      | w    | r/na  |      |        | wclr    | true  |       |      |       |      |       |             |
-| `wos`      | w    | r/na  |      |        | wset    |       | true  |      |       |      |       |             |
+| `woc`      | w    | r     |      |        | wclr    | true  |       |      |       |      |       |             |
+| `wos`      | w    | r     |      |        | wset    |       | true  |      |       |      |       |             |
 | `w0crs`    | rw   | r/na  |      | rset   | wzc     |       |       |      |       |      |       |             |
 | `w1crs`    | rw   | r/na  |      | rset   | woclr   |       |       |      |       |      |       |             |
 | `wcrs`     | rw   | r/na  |      | rset   | wclr    |       |       |      |       |      |       |             |
@@ -55,10 +55,10 @@ Legend:
 | `rwtrg`    | rw   | r/na  |      |        |         |       |       |      |       |      | true  |             |
 | `rotrg` (ext) | r  | rw/w  |      |        |         |       |       |      |       |      | true  |             |
 | `rotrg` (ref) | r  | r/na  | ref  |        |         |       |       |      |       |      | true  |             |
-| `wotrg`    | w    | r/na  |      |        |         |       |       |      |       |      | true  |             |
+| `wotrg`    | w    | r     |      |        |         |       |       |      |       |      | true  |             |
 | `w1trg`    | rw   | r/na  |      |        |         |       |       |      |       |      |       | true        |
 | `w1`       | rw1  | r/na  |      |        |         |       |       |      |       |      |       |             |
-| `wo1`      | w1   | r/na  |      |        |         |       |       |      |       |      |       |             |
+| `wo1`      | w1   | r     |      |        |         |       |       |      |       |      |       |             |
 
 ## General error rules (apply to all types)
 - `hw = rw1` or `hw = w1` (write-once on the hardware side) — RgGen has no corresponding concept.
