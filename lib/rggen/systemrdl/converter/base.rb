@@ -17,7 +17,8 @@ module RgGen
           return if region_only?
 
           input_data = insert_design_boundary(rdl_model, root_data) if design_boundary_required?(rdl_model)
-          input_data = input_data.child(layer_name)
+          input_data = (insert_to_root? && root_data || input_data).child(layer_name)
+
           convert_rdl_model(rdl_model, root_data, input_data)
 
           rdl_model.instances.each do |sub_model|
@@ -93,6 +94,10 @@ module RgGen
           false
         end
 
+        def insert_to_root?
+          false
+        end
+
         def select_converter(rdl_model)
           {
             addrmap: AddrMap,
@@ -109,11 +114,14 @@ module RgGen
         end
 
         def convert_name(rdl_model, input_data)
-          name = rdl_model.name
-          name.include?('__') &&
-            (error "identifier including __ is not allowed: #{name}", rdl_model.token_range)
+          check_name(rdl_model)
+          input_data[:name] = to_input_value(escape_name(rdl_model.name), rdl_model.token_range)
+        end
 
-          input_data[:name] = to_input_value(escape_name(name), rdl_model.token_range)
+        def check_name(rdl_model)
+          return unless rdl_model.name.include?('__')
+
+          error "identifier including __ is not allowed: #{rdl_model.name}", rdl_model.token_range
         end
 
         def escape_name(name)

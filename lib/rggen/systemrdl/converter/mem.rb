@@ -10,7 +10,7 @@ module RgGen
           true
         end
 
-        def external?(_ral_model)
+        def external?(_rdl_model)
           true
         end
 
