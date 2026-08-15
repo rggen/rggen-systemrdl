@@ -15,11 +15,21 @@ module RgGen
         end
 
         def convert_rdl_model(rdl_model, _root_data, input_data)
+          check_precedence(rdl_model, input_data)
           convert_name(rdl_model, input_data)
           convert_comment(rdl_model, input_data)
           convert_bit_assignment(rdl_model, input_data)
           convert_initial_value(rdl_model, input_data)
           convert_type(rdl_model, input_data)
+        end
+
+        def check_precedence(rdl_model, input_data)
+          return if input_data.configuration.ignore_precedence?
+
+          precedence = rdl_model.property(:precedence)
+          return if precedence.value == :hw
+
+          error 'sw precedence is not supported', precedence.token_range
         end
 
         def convert_bit_assignment(rdl_model, input_data)

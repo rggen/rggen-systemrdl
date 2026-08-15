@@ -10,7 +10,12 @@ RSpec.shared_context 'systemrdl common' do
   def load_rdl(rdl, layer, **cfg_values)
     factory = RgGen.builder.build_factory(:input, :register_map)
 
-    cfg = create_configuration(**cfg_values)
+    cfg =
+      if cfg_values.empty?
+        create_configuration(ignore_precedence: true)
+      else
+        create_configuration(**cfg_values)
+      end
     input_data = factory.__send__(:create_input_data, cfg)
     valid_value_lists = factory.__send__(:valid_value_lists)
     loader = factory.loaders.find { |l| l.support?(filename) }

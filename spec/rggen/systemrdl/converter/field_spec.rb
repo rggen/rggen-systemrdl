@@ -621,6 +621,48 @@ RSpec.describe RgGen::SystemRDL::Converter::Field do
     end
   end
 
+  describe 'precedence handling' do
+    context 'when ignore_precedence is off' do
+      it 'raises an error when the field precedence is sw' do
+        expect {
+          load_rdl(<<~RDL, :bit_field, ignore_precedence: false)
+            addrmap my_map {
+              reg {
+                field { sw = rw; hw = r; precedence = sw; } a;
+              } a;
+            };
+          RDL
+        }.to raise_source_error 'sw precedence is not supported'
+      end
+
+      it 'does not raise an error when the field precedence is hw' do
+        expect {
+          load_rdl(<<~RDL, :bit_field, ignore_precedence: false)
+            addrmap my_map {
+              reg {
+                field { sw = rw; hw = r; precedence = hw; } a;
+              } a;
+            };
+          RDL
+        }.not_to raise_error
+      end
+    end
+
+    context 'when ignore_precedence is on' do
+      it 'does not raise an error even when the field precedence is sw' do
+        expect {
+          load_rdl(<<~RDL, :bit_field, ignore_precedence: true)
+            addrmap my_map {
+              reg {
+                field { sw = rw; hw = r; precedence = sw; } a;
+              } a;
+            };
+          RDL
+        }.not_to raise_error
+      end
+    end
+  end
+
   describe 'error detection' do
     it 'raises an error when a field identifier contains __' do
       expect {

@@ -13,6 +13,7 @@ require_relative 'systemrdl/loader'
 
 RgGen.setup_plugin :'rggen-systemrdl' do |plugin|
   plugin.version RgGen::SystemRDL::VERSION
+  plugin.files ['systemrdl/global/ignore_precedence']
   plugin.setup_loader :register_map, :systemrdl do |entry|
     entry.register_loaders [RgGen::SystemRDL::Loader]
   end
