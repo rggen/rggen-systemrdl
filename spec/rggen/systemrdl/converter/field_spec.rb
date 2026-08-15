@@ -84,7 +84,7 @@ RSpec.describe RgGen::SystemRDL::Converter::Field do
           reg {
             field { sw = r; hw = rw; } a;
             field { sw = r; hw = w;  } b;
-            field { sw = r; hw = r;  } c;
+            field { sw = r; hw = w;  } c;
             field { sw = r; hw = r;  } d;
             d->next = c;
           } a;
@@ -553,7 +553,7 @@ RSpec.describe RgGen::SystemRDL::Converter::Field do
           reg {
             field { sw = r; hw = rw; swacc = true; } a;
             field { sw = r; hw = w;  swacc = true; } b;
-            field { sw = r; hw = r; } c;
+            field { sw = r; hw = w; } c;
             field { sw = r; hw = r; swacc = true; } d;
             d->next = c;
           } a;
@@ -618,6 +618,151 @@ RSpec.describe RgGen::SystemRDL::Converter::Field do
       RDL
 
       expect(input_data[0]).to have_value(:type, :wo1)
+    end
+  end
+
+  describe 'error detection' do
+    it 'raises an error when a field identifier contains __' do
+      expect {
+        load_rdl(<<~RDL, :bit_field)
+          addrmap my_map {
+            reg {
+              field { sw = rw; hw = r; } a_b;
+            } a;
+          };
+        RDL
+      }.not_to raise_error
+
+      expect {
+        load_rdl(<<~RDL, :bit_field)
+          addrmap my_map {
+            reg {
+              field { sw = rw; hw = r; } a__b;
+            } a;
+          };
+        RDL
+      }.to raise_source_error 'identifier including __ is not allowed: a__b'
+
+      expect {
+        load_rdl(<<~RDL, :bit_field)
+          addrmap my_map {
+            reg {
+              field { sw = rw; hw = r; } a___b;
+            } a;
+          };
+        RDL
+      }.to raise_source_error 'identifier including __ is not allowed: a___b'
+    end
+
+    it 'raises a source error when an unsupported property is set' do
+      [:wel, :swmod, :anded, :ored, :xored, :paritycheck].each do |prop_name|
+        expect {
+          load_rdl(<<~RDL, :bit_field)
+            addrmap my_map {
+              reg {
+                field { sw = rw; hw = r; #{prop_name} = true; } a;
+              } a;
+            };
+          RDL
+        }.to raise_source_error "#{prop_name} is not supported"
+      end
+
+      [:hwenable, :hwmask, :resetsignal].each do |prop_name|
+        expect {
+          load_rdl(<<~RDL, :bit_field)
+            addrmap my_map {
+              reg {
+                field { sw = rw; hw = r; } a;
+                field { sw = rw; hw = r; } b;
+                b->#{prop_name} = a;
+              } a;
+            };
+          RDL
+        }.to raise_source_error "#{prop_name} is not supported"
+      end
+    end
+
+    it 'raises an error when a property reference is given to a reference property' do
+      [:next, :we, :swwe, :swwel, :hwclr, :hwset].each do |prop_name|
+        expect {
+          load_rdl(<<~RDL, :bit_field)
+            addrmap my_map {
+              reg {
+                field { sw = rw; hw = r; } a;
+                field { sw = rw; hw = r; } b;
+                b->#{prop_name} = a->anded;
+              } a;
+            };
+          RDL
+        }.to raise_source_error 'property reference is not supported'
+      end
+    end
+
+    it 'raises an error when reset is given as a reference' do
+      expect {
+        load_rdl(<<~RDL, :bit_field)
+          addrmap my_map {
+            reg {
+              field { sw = rw; hw = r; } a;
+              field { sw = rw; hw = r; } b;
+              b->reset = a;
+            } a;
+          };
+        RDL
+      }.to raise_source_error 'reset given as a reference is not supported'
+    end
+
+    it 'raises an error when the property combination fits no RgGen type' do
+      [
+        'field {sw = r;  hw = r;   onread  = ruser; } a;',
+        'field {sw = rw; hw = r;   onwrite = wuser; } a;',
+        'field {sw = rw; hw = r;   onwrite = wclr;  } a;', # wclr without hwset
+        'field {sw = rw; hw = rw1; we = true;       } a;',
+        'field {sw = rw; hw = w1;  we = true;       } a;',
+      ].each do |field_def|
+        expect {
+          load_rdl(<<~RDL, :bit_field)
+            addrmap my_map {
+              reg {
+                #{field_def}
+              } a;
+            };
+          RDL
+        }.to raise_source_error 'no corresponding bit field type'
+      end
+
+      # a bool-only required hwset/hwclr given as a reference → fits no type
+      [
+        # hwset=true required
+        'field { sw = r;  hw = r; onread = rclr;                  } b; b->hwset = a;', # rc
+        'field { sw = rw; hw = r; onwrite = wzc;                  } b; b->hwset = a;', # w0c
+        'field { sw = rw; hw = r; onwrite = woclr;                } b; b->hwset = a;', # w1c
+        'field { sw = rw; hw = r; onwrite = wclr;                 } b; b->hwset = a;', # wc
+        'field { sw = w;  hw = r; onwrite = wclr;                 } b; b->hwset = a;', # woc
+        'field { sw = rw; hw = r; onwrite = wzc;   onread = rset; } b; b->hwset = a;', # w0crs
+        'field { sw = rw; hw = r; onwrite = woclr; onread = rset; } b; b->hwset = a;', # w1crs
+        'field { sw = rw; hw = r; onwrite = wclr;  onread = rset; } b; b->hwset = a;', # wcrs
+        # hwclr=true required
+        'field { sw = r;  hw = r; onread = rset;                  } b; b->hwclr = a;', # rs
+        'field { sw = rw; hw = r; onwrite = wzs;                  } b; b->hwclr = a;', # w0s
+        'field { sw = rw; hw = r; onwrite = woset;                } b; b->hwclr = a;', # w1s
+        'field { sw = rw; hw = r; onwrite = wset;                 } b; b->hwclr = a;', # ws
+        'field { sw = w;  hw = r; onwrite = wset;                 } b; b->hwclr = a;', # wos
+        'field { sw = rw; hw = r; onwrite = wzs;   onread = rclr; } b; b->hwclr = a;', # w0src
+        'field { sw = rw; hw = r; onwrite = woset; onread = rclr; } b; b->hwclr = a;', # w1src
+        'field { sw = rw; hw = r; onwrite = wset;  onread = rclr; } b; b->hwclr = a;'  # wsrc
+      ].each do |field_def|
+        expect {
+          load_rdl(<<~RDL, :bit_field)
+            addrmap my_map {
+              reg {
+                field { sw = rw; hw = r; } a;
+                #{field_def}
+              } a;
+            };
+          RDL
+        }.to raise_source_error 'no corresponding bit field type'
+      end
     end
   end
 end

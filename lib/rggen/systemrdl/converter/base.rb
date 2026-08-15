@@ -9,6 +9,9 @@ module RgGen
         end
 
         def convert(rdl_model, root_data, input_data)
+          check_unsupported_properties(rdl_model)
+          check_property_reference(rdl_model)
+
           insert_external(rdl_model, input_data) if external?(rdl_model)
           input_data = insert_design_boundary(rdl_model, root_data) if design_boundary_required?(rdl_model)
 
@@ -22,6 +25,26 @@ module RgGen
         end
 
         private
+
+        def check_unsupported_properties(rdl_model)
+          unsupported_properties&.each do |property|
+            prop = rdl_model.property(property)
+            next unless prop.value
+
+            error "#{property} is not supported", prop.token_range
+          end
+        end
+
+        def unsupported_properties
+        end
+
+        def check_property_reference(rdl_model)
+          rdl_model.properties.each_value do |prop|
+            next unless prop.property_ref?
+
+            error 'property reference is not supported', prop.token_range
+          end
+        end
 
         def external?(_rdl_model)
           false
@@ -41,8 +64,17 @@ module RgGen
           }[rdl_model.layer]
         end
 
+        def error(message, token_range)
+          pos = token_range&.head&.position
+          raise Core::SourceError.new(message, pos)
+        end
+
         def convert_name(rdl_model, input_data)
-          input_data[:name] = to_input_value(rdl_model.name, rdl_model.token_range)
+          name = rdl_model.name
+          name.include?('__') &&
+            (error "identifier including __ is not allowed: #{name}", rdl_model.token_range)
+
+          input_data[:name] = to_input_value(name, rdl_model.token_range)
         end
 
         def convert_comment(rdl_model, input_data)

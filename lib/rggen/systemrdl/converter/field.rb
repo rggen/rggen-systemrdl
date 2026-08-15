@@ -10,6 +10,10 @@ module RgGen
           :bit_field
         end
 
+        def unsupported_properties
+          [:resetsignal, :wel, :swmod, :anded, :ored, :xored, :hwenable, :hwmask, :paritycheck]
+        end
+
         def convert_rdl_model(rdl_model, _root_data, input_data)
           convert_name(rdl_model, input_data)
           convert_comment(rdl_model, input_data)
@@ -25,14 +29,16 @@ module RgGen
         end
 
         def convert_initial_value(rdl_model, input_data)
-          initial_value = from_property(rdl_model, :reset)
-          return unless initial_value
+          reset = rdl_model.property(:reset)
 
-          input_data[:initial_value] = initial_value
+          reset.value? ||
+            (error 'reset given as a reference is not supported', reset.token_range)
+
+          input_data[:initial_value] = from_property_value(reset) if reset.value
         end
 
         def convert_type(rdl_model, input_data)
-          [
+          return if [
             :convert_rw, :convert_rof, :convert_ro_ext, :convert_ro_ref, :convert_wo, :convert_rohw,
             :convert_rwhw, :convert_rc, :convert_rs, :convert_wrc, :convert_wrs, :convert_w0c,
             :convert_w1c, :convert_w0s, :convert_w1s, :convert_w0t, :convert_w1t, :convert_wc,
@@ -40,9 +46,9 @@ module RgGen
             :convert_w0src, :convert_w1src, :convert_wsrc, :convert_rwl, :convert_rwe, :convert_rwc,
             :convert_rws, :convert_rwtrg, :convert_rotrg_ext, :convert_rotrg_ref, :convert_wotrg,
             :convert_w1trg, :convert_w1, :convert_wo1
-          ].each do |converter|
-            break if __send__(converter, rdl_model, input_data)
-          end
+          ].any? { |converter| __send__(converter, rdl_model, input_data) }
+
+          error 'no corresponding bit field type', rdl_model.token_range
         end
 
         def convert_rw(rdl_model, input_data)
