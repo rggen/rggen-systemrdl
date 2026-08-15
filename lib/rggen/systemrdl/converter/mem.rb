@@ -3,9 +3,19 @@
 module RgGen
   module SystemRDL
     module Converter
-      class Mem
-        def convert(rdl_model, _root_data, input_data)
-          insert_external(rdl_model, input_data)
+      class Mem < Base
+        private
+
+        def support_external?
+          true
+        end
+
+        def external?(_ral_model)
+          true
+        end
+
+        def region_only?
+          true
         end
       end
     end
