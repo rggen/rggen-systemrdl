@@ -1,20 +1,17 @@
 # frozen_string_literal: true
 
-RSpec.describe RgGen::SystemRDL::Converter::Reg do
+RSpec.describe RgGen::SystemRDL::Converter::RegFile do
   include_context 'systemrdl common'
 
-  it 'converts reg instance name into the register name' do
-    input_data = load_rdl(<<~RDL, :register)
+  it 'converts regfile instance name into the register_file name' do
+    input_data = load_rdl(<<~RDL, :register_file)
       addrmap my_map {
-        reg {
-          field { sw = rw; hw = r; } a;
-        } a;
-        reg {
-          field { sw = rw; hw = r; } b;
-        } b[2];
-        reg {
-          field { sw = rw; hw = r; } c;
-        } c[1][2];
+        regfile my_regfile {
+          reg { field { sw = rw; hw = r; } a; } a;
+        };
+        my_regfile a;
+        my_regfile b[2];
+        my_regfile c[1][2];
       };
     RDL
 
@@ -25,24 +22,25 @@ RSpec.describe RgGen::SystemRDL::Converter::Reg do
     expect(input_data[4]).to have_value(:name, 'c__0__1')
   end
 
-  it 'converts reg desc into the register comment' do
-    input_data = load_rdl(<<~RDL, :register)
+  it 'converts regfile desc into the register_file comment' do
+    input_data = load_rdl(<<~RDL, :register_file)
       addrmap my_map {
-        reg { field { sw = rw; hw = r; } a; desc = "register a"; } a;
-        reg { field { sw = rw; hw = r; } a; } b;
+        reg my_reg { field { sw = rw; hw = r; } a; };
+        regfile { my_reg a; desc = "register file a"; } a;
+        regfile { my_reg a; } b;
       };
     RDL
 
-    expect(input_data[0]).to have_value(:comment, 'register a')
+    expect(input_data[0]).to have_value(:comment, 'register file a')
     expect(input_data[1]).to have_value(:comment, '')
   end
 
-  it 'converts reg address into the register offset_address' do
-    input_data = load_rdl(<<~RDL, :register)
+  it 'converts regfile address into the register_file offset_address' do
+    input_data = load_rdl(<<~RDL, :register_file)
       addrmap my_map {
-        reg { regwidth = 32; field { sw = rw; hw = r; } a; } a @ 0x00;
-        reg { regwidth = 16; field { sw = rw; hw = r; } a; } b @ 0x10;
-        reg { regwidth = 16; field { sw = rw; hw = r; } a; } c @ 0x22;
+        regfile { reg { regwidth = 32; field { sw = rw; hw = r; } a; } a; } a @ 0x00;
+        regfile { reg { regwidth = 16; field { sw = rw; hw = r; } a; } b; } b @ 0x10;
+        regfile { reg { regwidth = 16; field { sw = rw; hw = r; } a; } c; } c @ 0x22;
       };
     RDL
 
@@ -52,12 +50,14 @@ RSpec.describe RgGen::SystemRDL::Converter::Reg do
   end
 
   describe 'error detection' do
-    it 'raises an error when a reg identifier contains __' do
+    it 'raises an error when a regfile identifier contains __' do
       expect {
         load_rdl(<<~RDL, :bit_field)
           addrmap my_map {
-            reg {
-              field { sw = rw; hw = r; } a;
+            regfile {
+              reg {
+                field { sw = rw; hw = r; } a;
+              } a;
             } a_b;
           };
         RDL
@@ -66,8 +66,10 @@ RSpec.describe RgGen::SystemRDL::Converter::Reg do
       expect {
         load_rdl(<<~RDL, :bit_field)
           addrmap my_map {
-            reg {
-              field { sw = rw; hw = r; } a;
+            regfile {
+              reg {
+                field { sw = rw; hw = r; } a;
+              } a;
             } a__b;
           };
         RDL
@@ -76,8 +78,10 @@ RSpec.describe RgGen::SystemRDL::Converter::Reg do
       expect {
         load_rdl(<<~RDL, :bit_field)
           addrmap my_map {
-            reg {
-              field { sw = rw; hw = r; } a;
+            regfile {
+              reg {
+                field { sw = rw; hw = r; } a;
+              } a;
             } a___b;
           };
         RDL
@@ -85,13 +89,13 @@ RSpec.describe RgGen::SystemRDL::Converter::Reg do
     end
 
     it 'raises a source error when an unsupported property is set' do
-      [:shared].each do |prop_name|
+      [:sharedextbus].each do |prop_name|
         expect {
           load_rdl(<<~RDL, :bit_field)
             addrmap my_map {
-              reg {
+              regfile {
                 #{prop_name} = true;
-                field { sw = rw; hw = r; } a;
+                reg { field { sw = rw; hw = r; } a; } a;
               } a;
             };
           RDL
@@ -101,9 +105,12 @@ RSpec.describe RgGen::SystemRDL::Converter::Reg do
 
     it 'ignores errextbus without raising an error' do
       expect {
-        load_rdl(<<~RDL, :register)
+        load_rdl(<<~RDL, :register_file)
           addrmap my_map {
-            reg { field { sw = rw; hw = r; } a; errextbus   = true; } a;
+            regfile {
+              reg { field { sw = rw; hw = r; } a; } a;
+              errextbus = true;
+            } a;
           };
         RDL
       }.not_to raise_error
@@ -113,10 +120,12 @@ RSpec.describe RgGen::SystemRDL::Converter::Reg do
       expect {
         load_rdl(<<~RDL, :register)
           addrmap my_map {
-            external reg { field { sw = rw; hw = r; } a; } a;
+            external regfile {
+              reg { field { sw = rw; hw = r; } a; } a;
+            } a;
           };
         RDL
-      }.to raise_source_error 'external reg is not supported'
+      }.to raise_source_error 'external regfile is not supported'
     end
   end
 end
