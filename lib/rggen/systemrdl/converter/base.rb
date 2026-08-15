@@ -9,6 +9,7 @@ module RgGen
         end
 
         def convert(rdl_model, root_data, input_data)
+          check_external(rdl_model)
           check_unsupported_properties(rdl_model)
           check_property_reference(rdl_model)
 
@@ -25,6 +26,20 @@ module RgGen
         end
 
         private
+
+        def check_external(rdl_model)
+          return unless !support_external? && external?(rdl_model)
+
+          error "external #{rdl_model.layer} is not supported", rdl_model.token_range
+        end
+
+        def support_external?
+          false
+        end
+
+        def external?(_rdl_model)
+          false
+        end
 
         def check_unsupported_properties(rdl_model)
           unsupported_properties&.each do |property|
@@ -44,10 +59,6 @@ module RgGen
 
             error 'property reference is not supported', prop.token_range
           end
-        end
-
-        def external?(_rdl_model)
-          false
         end
 
         def design_boundary_required?(_rdl_model)
@@ -74,11 +85,19 @@ module RgGen
           name.include?('__') &&
             (error "identifier including __ is not allowed: #{name}", rdl_model.token_range)
 
-          input_data[:name] = to_input_value(name, rdl_model.token_range)
+          input_data[:name] = to_input_value(escape_name(name), rdl_model.token_range)
+        end
+
+        def escape_name(name)
+          name.gsub('[', '__').gsub(']', '')
         end
 
         def convert_comment(rdl_model, input_data)
           input_data[:comment] = from_property(rdl_model, :desc)
+        end
+
+        def convert_offset_address(rdl_model, input_data)
+          input_data[:offset_address] = from_property(rdl_model, :address)
         end
 
         def set_true?(rdl_model, property_name)
