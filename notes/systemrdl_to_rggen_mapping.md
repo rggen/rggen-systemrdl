@@ -178,9 +178,13 @@ give the final positions.
   etc.)
 - Combinations that fit no named RgGen type — ERROR in the first release (`custom` is not used
   yet; see `bit_field_type_mapping.md`).
+
+### field: checks delegated to RgGen core (not done by the converter)
 - Bit-field overlap — two or more fields at the same bit position in a register (SystemRDL allows
-  this when read/write are mutually exclusive) — ERROR. RgGen has no merged read-only+write-only
-  field (`rowo` is not supported).
+  this when read/write are mutually exclusive). The converter does NOT detect this; it just emits
+  each field's `bit_assignment`, and RgGen's own bit_assignment validation rejects the overlap
+  (RgGen has no merged read-only+write-only field — `rowo` is not supported). Listed here so the
+  behavior is documented, but it is not a converter-side error.
 
 ### field: precedence handling
 Handled per a project-level "precedence ignore mode" flag (see rggen/rggen-systemrdl
