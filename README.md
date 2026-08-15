@@ -1,39 +1,66 @@
-# Rggen::Systemrdl
+[![Gem Version](https://badge.fury.io/rb/rggen-systemrdl.svg)](https://badge.fury.io/rb/rggen-systemrdl)
+[![CI](https://github.com/rggen/rggen-systemrdl/actions/workflows/ci.yml/badge.svg)](https://github.com/rggen/rggen-systemrdl/actions/workflows/ci.yml)
+[![Discord](https://img.shields.io/discord/1406572699467124806?style=flat&logo=discord)](https://discord.com/invite/KWya83ZZxr)
 
-TODO: Delete this and the text below, and describe your gem
+# RgGen::SystemRDL
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/rggen/systemrdl`. To experiment with that code, run `bin/console` for an interactive prompt.
+RgGen::SystemRDL is a RgGen plugin to load register map descriptions written in [SystemRDL 2.0](https://www.accellera.org/images/downloads/standards/systemrdl/SystemRDL_2.0_Jan2018.pdf).
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+To install RgGen::SystemRDL, use the following command:
 
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
 ```
-
-If bundler is not being used to manage dependencies, install the gem by executing:
-
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+$ gem install rggen-systemrdl
 ```
 
 ## Usage
 
-TODO: Write usage instructions here
+You need to tell RgGen to load the RgGen::SystemRDL plugin. There are two ways.
 
-## Development
+### Using the `--plugin` runtime option
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+```
+$ rggen --plugin rggen-systemrdl your_register_map.rdl
+```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+### Using the `RGGEN_PLUGINS` environment variable
 
-## Contributing
+```
+$ export RGGEN_PLUGINS=${RGGEN_PLUGINS}:rggen-systemrdl
+$ rggen your_register_map.rdl
+```
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/rggen-systemrdl.
+## Supported features and limitations
 
-## License
+The plugin converts SystemRDL `addrmap`, `regfile`, `reg`, `field`, and `mem` components into the corresponding RgGen register map layers, including a wide range of `field` access types.
+Some SystemRDL constructs have no corresponding concept in RgGen. These are not supported and cause an error.
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+For the detailed component-to-layer correspondence, the full SystemRDL-property to RgGen-type mapping, and the complete list of unsupported constructs with the reasons behind each decision, see the design notes:
+
+* [SystemRDL to RgGen mapping](notes/systemrdl_to_rggen_mapping.md)
+* [Bit field type matrix](notes/bit_field_type_matrix.md)
+
+### Precedence handling
+
+RgGen fixes precedence to hardware, whereas SystemRDL's precedence is variable and defaults to software.
+A field is therefore rejected unless its precedence is explicitly set to `hw`.
+
+To accept a SystemRDL description without changing it, set the `ignore_precedence` configuration option (default `false`) to `true`.
+Then the `precedence` property in the SystemRDL description is ignored and every field is treated as hardware precedence.
+
+## Contact
+
+Feedbacks, bug reports, questions and etc. are welcome! You can post them by using the following
+ways:
+
+* [GitHub Issue Tracker](https://github.com/rggen/rggen/issues)
+* [GitHub Discussions](https://github.com/rggen/rggen/discussions)
+* [Discord](https://discord.com/invite/KWya83ZZxr)
+* [Mailing List](https://groups.google.com/d/forum/rggen)
+* [Mail](mailto:rggen@googlegroups.com)
+
+## Copyright & License
+
+Copyright &copy; 2026 Taichi Ishitani.
+RgGen::SystemRDL is licensed under the [MIT License](https://opensource.org/licenses/MIT), see [LICENSE](LICENSE) for further details.

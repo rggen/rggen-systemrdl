@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   }
 
   spec.files =
-    `git ls-files lib LICENSE README.md`.split($RS)
+    `git ls-files lib notes LICENSE README.md`.split($RS)
   spec.require_paths = ['lib']
 
   spec.add_dependency 'systemrdl', '>= 0.1.0'
