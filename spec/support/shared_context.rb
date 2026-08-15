@@ -7,9 +7,11 @@ RSpec.shared_context 'systemrdl common' do
     'test.rdl'
   end
 
-  def load_rdl(rdl, layer, **cfg_values)
-    factory = RgGen.builder.build_factory(:input, :register_map)
+  let(:factory) do
+    RgGen.builder.build_factory(:input, :register_map)
+  end
 
+  def load_rdl(rdl, layer, **cfg_values)
     cfg =
       if cfg_values.empty?
         create_configuration(ignore_precedence: true)

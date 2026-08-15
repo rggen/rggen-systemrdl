@@ -22,3 +22,5 @@ require 'rggen/systemrdl'
 builder.plugin_manager.activate_plugin_by_name(:'rggen-systemrdl')
 
 builder.enable_all
+
+RGGEN_SYSTEMRDL_ROOT = File.expand_path('..', __dir__)
