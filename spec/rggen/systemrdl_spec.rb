@@ -8,7 +8,7 @@ RSpec.describe RgGen::SystemRDL do
     it 'loads the SystemRDL file and expands it into a register map' do
       rdl_file = File.join(RGGEN_SYSTEMRDL_ROOT, 'spec', 'fixtures', 'gpio.rdl')
 
-      configuration = create_configuration(ignore_precedence: true)
+      configuration = create_configuration
       register_map = factory.create(configuration, [rdl_file])
 
       register_block = register_map.register_blocks[0]

@@ -1,4 +1,6 @@
 addrmap gpio {
+  default precedence = hw;
+
   name = "GPIO";
   desc = "Simple general purpose I/O controller";
 
