@@ -13,8 +13,9 @@ for_ci do
   gem_bundled 'racc'
 end
 
+path_systemrdl = File.join(root, 'systemrdl')
 if ENV.key?('CI')
   gem 'systemrdl', github: 'taichi-ishitani/systemrdl'
-else
-  gem 'systemrdl', path: File.join(root, 'systemrdl')
+elsif Dir.exist?(path_systemrdl)
+  gem 'systemrdl', path: path_systemrdl
 end

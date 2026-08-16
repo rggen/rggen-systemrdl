@@ -26,5 +26,5 @@ Gem::Specification.new do |spec|
     `git ls-files lib notes LICENSE README.md`.split($RS)
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'systemrdl', '>= 0.1.0'
+  spec.add_dependency 'systemrdl', '>= 0.2.0'
 end
